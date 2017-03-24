@@ -15,6 +15,10 @@ import com.graphhopper.util.DistanceCalcEarth;
 import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.PointList;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class Routing {
@@ -106,5 +110,20 @@ public class Routing {
 
     public static Map<Integer, Edge> getEdgesStorage() {
         return EDGES_STORAGE;
+    }
+
+    public static void saveEdgesStorage(OutputStreamWriter writer) throws IOException {
+        for (Edge e :
+                EDGES_STORAGE.values()) {
+            writer.write(e.write() + '\n');
+        }
+        writer.close();
+    }
+
+    public static void loadEdgesStorage(String filename) throws IOException {
+        Files.lines(Paths.get(filename)).forEach(s -> {
+            Edge e = new Edge(s);
+            EDGES_STORAGE.put(e.id, e);
+        });
     }
 }

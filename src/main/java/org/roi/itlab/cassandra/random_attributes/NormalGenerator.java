@@ -38,6 +38,14 @@ public class NormalGenerator {
     }
 
     public double getRandomDouble(double source) {
+
+//TODO: add min/max checks
+//            if(value <= x[0])
+//                return means[0];
+//            if(value >= x[x.length-1])
+//                return normalExperienceGenerator.getRandomDouble(x[x.length-1]);
+//            return normalExperienceGenerator.getRandomDouble(value);
+
         double mean = meanPsf.value(source);
         double dev = devPsf.value(source);
         RealDistribution dist = new NormalDistribution(rng, mean, dev);

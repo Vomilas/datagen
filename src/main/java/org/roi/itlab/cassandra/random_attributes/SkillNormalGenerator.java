@@ -1,32 +1,15 @@
 package org.roi.itlab.cassandra.random_attributes;
 
 /**
- * Created by Vadim on 20.03.2017.
+ * Created by mkuperman on 3/19/2017.
  */
-public class SkillNormalGenerator {
-    private NormalGenerator normalExperienceGenerator;
-    private double[] x;
-    private double[] means;
-    private double[] sigma;
+public class SkillNormalGenerator extends NormalGenerator {
 
-    public SkillNormalGenerator(org.apache.commons.math3.random.RandomGenerator rng)
-    {
-        //TODO rename arrays, add arrays/ csv to constractor
-        x = new double[]{0, 1, 5, 10, 50};
-        means = new double[]{0, 1,25, 30, 15};
-        sigma = new double[]{0, 0.1, 2.5, 4, 7};
+    static double[] x = {0.0,5.0,10.0,20.0,90};
+    static double[] y  = {0.5,0.9,1.2,1.3,1.0};
+    static double[] z  = {0.1,0.2,0.3,0.3,0.2};
 
-
-        normalExperienceGenerator = new NormalGenerator( rng, x, means, sigma);
-    }
-
-    public double getDouble(int value)
-    {
-        if(value <= x[0])
-            return means[0];
-        if(value > x[x.length-1])
-            return normalExperienceGenerator.getRandomDouble(x[x.length-1]);
-
-        return normalExperienceGenerator.getRandomDouble(value);
+    public SkillNormalGenerator(org.apache.commons.math3.random.RandomGenerator rng) {
+        super(rng, x, y, z);
     }
 }

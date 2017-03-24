@@ -7,4 +7,9 @@ cache:
   - "$HOME/.sonar/cache"
 addons:
   sonarqube: true
-script: mvn -DindentSize=4 clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar
+script:
+    - 'if [ ${TRAVIS_SECURE_ENV_VARS} = "true" -a ${TRAVIS_PULL_REQUEST} = "false" ]; then
+          mvn -DindentSize=4 clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar;
+      else
+          mvn clean install;
+      fi'

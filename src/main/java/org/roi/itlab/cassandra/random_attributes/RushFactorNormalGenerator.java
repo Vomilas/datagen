@@ -3,30 +3,14 @@ package org.roi.itlab.cassandra.random_attributes;
 /**
  * Created by Vadim on 20.03.2017.
  */
-public class RushFactorNormalGenerator {
-    private NormalGenerator normalExperienceGenerator;
-    private double[] x;
-    private double[] means;
-    private double[] sigma;
 
-    public RushFactorNormalGenerator(org.apache.commons.math3.random.RandomGenerator rng)
-    {
-        //TODO rename arrays, add arrays/ csv to constractor
-        x = new double[]{18, 25,  30, 60, 90};
-        means = new double[]{35, 20,5,10,15};
-        sigma = new double[]{10, 7.2, 5.6, 3.0, 7.0};
+public class RushFactorNormalGenerator extends NormalGenerator {
 
+    static double[] x = {18, 25,  35, 60, 90};
+    static double[] y  = {3.0,1.5,1.0,0.8,0.7};
+    static double[] z  = {0.5,0.3,0.2,0.2,0.1};
 
-        normalExperienceGenerator = new NormalGenerator( rng, x, means, sigma);
+    public RushFactorNormalGenerator(org.apache.commons.math3.random.RandomGenerator rng) {
+        super(rng, x, y, z);
     }
-
-    public double getDouble(int value)
-    {
-        if(value <= x[0])
-            return means[0];
-        if(value >= x[x.length-1])
-            return normalExperienceGenerator.getRandomDouble(x[x.length-1]);
-        return normalExperienceGenerator.getRandomDouble(value);
-    }
-
 }

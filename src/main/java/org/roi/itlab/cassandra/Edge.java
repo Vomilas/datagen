@@ -27,6 +27,22 @@ public class Edge {
         this.speed = speed;
     }
 
+    public Edge(String input) {
+        String[] p = input.split("\\|");
+        this.id = Integer.parseInt(p[0]);
+        this.time = Integer.parseInt(p[2]);
+        this.distance = Double.parseDouble(p[3]);
+        this.speed = Double.parseDouble(p[4]);
+        String[] points = p[1].substring(1).split("[, ()]+");
+
+        this.geometry = new PointList();
+        for (int i = 0; i < points.length; i += 2) {
+            this.geometry.add(Double.parseDouble(points[i]), Double.parseDouble(points[i + 1]));
+        }
+        this.start = new Point(geometry.getLat(0), geometry.getLon(0));
+        this.end = new Point(geometry.getLat(geometry.size() - 1), geometry.getLon(geometry.size() - 1));
+    }
+
 
     public Point getStart() {
         return start;
@@ -71,6 +87,16 @@ public class Edge {
         return "edge id: " + id + " start: " + start.toString() + " end: " + end.toString();
     }
 
+    public String write() {
+        StringBuilder sb = new StringBuilder();
+        sb.
+                append(id).append('|').
+                append(this.geometry.toString()).append('|').
+                append(this.time).append('|').
+                append(this.distance).append('|').
+                append(this.speed);
+        return sb.toString();
+    }
 
     @Override
     public int hashCode() {

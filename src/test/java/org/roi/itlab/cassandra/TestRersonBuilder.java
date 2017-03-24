@@ -1,19 +1,14 @@
 package org.roi.itlab.cassandra;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.commons.math3.stat.Frequency;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.roi.itlab.cassandra.person.Person;
-import org.roi.itlab.cassandra.person.PersonBuilder;
-import org.roi.itlab.cassandra.person.PersonBuilderImpl;
-import org.roi.itlab.cassandra.person.PersonDirector;
-import org.roi.itlab.cassandra.random_attributes.CSVReader;
-import org.roi.itlab.cassandra.random_attributes.RandomGenerator;
+import org.roi.itlab.cassandra.random_attributes.PersonGenerator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -30,13 +25,10 @@ public class TestRersonBuilder {
     @Before
     public  void init()
     {
-        PersonDirector personDirector = new PersonDirector();
-        PersonBuilder personBuilderImpl = new PersonBuilderImpl();
-        personDirector.setPersonBuilder(personBuilderImpl);
+        PersonGenerator personGenerator = new PersonGenerator();
 
         for(int j = 0 ; j < 1000;++j) {
-            personDirector.constructPerson(j);
-            list.add(personDirector.getPerson());
+            list.add(personGenerator.getResult());
             age.addValue(list.get(j).getAge());
             mean_mean += list.get(j).getAge();
             workStartTime.addValue(list.get(j).getWorkStart());
@@ -74,8 +66,8 @@ public class TestRersonBuilder {
     @Test
     public void TestBuilder() throws Exception {
         Assert.assertEquals(mean_mean, 30, 15);
-        Assert.assertEquals(age.getUniqueCount(), 72);
-        Assert.assertEquals(mode.get(0).toString(), "32");
+        Assert.assertEquals(age.getUniqueCount(), 72, 1);
+        Assert.assertEquals(Integer.parseInt(mode.get(0).toString()), 35, 5);
         Assert.assertEquals(workStartTime.getUniqueCount(), 13);
     }
 }

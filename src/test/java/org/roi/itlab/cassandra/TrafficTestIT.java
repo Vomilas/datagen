@@ -8,10 +8,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mongodb.morphia.geo.Point;
 import org.roi.itlab.cassandra.person.Person;
-import org.roi.itlab.cassandra.person.PersonBuilder;
-import org.roi.itlab.cassandra.person.PersonBuilderImpl;
-import org.roi.itlab.cassandra.person.PersonDirector;
 import org.roi.itlab.cassandra.random_attributes.LocationGenerator;
+import org.roi.itlab.cassandra.random_attributes.PersonGenerator;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,9 +24,13 @@ public class TrafficTestIT {
     private static final String testPois = "./src/test/resources/org/roi/payg/saint-petersburg_russia.csv";
     private static final String officePois = "./src/test/resources/org/roi/payg/saint-petersburg_russia_office.csv";
     private static final String target = "./target/intensity.txt";
+    private static final String target2 = "./target/drivers.txt";
+    private static final String IntensityMapSaveFile = "./target/traffic/intensity_map";
+    private static final String EdgesStorageSaveFile = "./target/traffic/edges_storage";
+    private static final String EdgesStrorageLoadFile = "./src/test/resources/edges_storage";
+    private static final String IntenstityMapLoadFile = "./src/test/resources/intensity_map";
 
-    private static final int ROUTES_COUNT = 100_000;
-    private static final int DAYS = 1;
+    private static final int ROUTES_COUNT = 1_000;
     static List<Route> routesToWork = new ArrayList<>(ROUTES_COUNT);
     static List<Route> routesFromWork = new ArrayList<>(ROUTES_COUNT);
     static List<Person> drivers;
@@ -64,17 +66,29 @@ public class TrafficTestIT {
         }
 
         //generating drivers
-        PersonDirector personDirector = new PersonDirector();
-        PersonBuilder personBuilderImpl = new PersonBuilderImpl();
-        personDirector.setPersonBuilder(personBuilderImpl);
+        PersonGenerator personGenerator = new PersonGenerator();
         drivers = new ArrayList<>(routesFromWork.size());
         for (int i = 0; i < routesFromWork.size(); i++) {
-            personDirector.constructPerson(i);
-            drivers.add(personDirector.getPerson());
+            drivers.add(personGenerator.getResult());
         }
         System.out.println(routingFailedCounter);
     }
 
+    @Test
+    public void saveDrivers() throws IOException {
+        Path path = FileSystems.getDefault().getPath(target2);
+        Files.deleteIfExists(path);
+        Files.createFile(path);
+        OutputStream out = Files.newOutputStream(path, StandardOpenOption.WRITE);
+        OutputStreamWriter writer = new OutputStreamWriter(out, Charset.defaultCharset());
+
+        writer.write("Age,Experience,Skill,RushFactor,WorkStart,WorkDuration,WorkEnd,HomeLat,HomeLng,WorkLat,WorkLng" + '\n');
+        for (Person person : drivers) {
+            writer.write(person.getAge() + "," + person.getExperience() + "," + String.format("%.3f", person.getSkill()) + "," + String.format("%.3f", person.getRushFactor()) + "," + person.getWorkStart() + "," + person.getWorkDuration() + "," + person.getWorkEnd() + "," + String.format("%.4f", person.getHome().getLatitude()) + "," + String.format("%.4f", person.getHome().getLongitude()) + "," + String.format("%.4f", person.getWork().getLatitude()) + "," + String.format("%.4f", person.getWork().getLongitude()) + '\n');
+        }
+        writer.write("_\n");
+        writer.close();
+    }
 
     @Test
     public void writeIntensityDistribution() throws IOException {
@@ -116,28 +130,39 @@ public class TrafficTestIT {
         writer.close();
     }
 
-    @Test
-    public void multipleDaysTrafficGeneration() {
-        Random rng = new Random(42);
-        for (int j = 0; j < DAYS; j++) {
-            IntensityMap traffic = new IntensityMap();
-            for (int i = 0; i < routesFromWork.size(); i++) {
-                long startTime = drivers.get(i).getWorkStart().toSecondOfDay() * 1000 + rng.nextInt(1000 * 60 * 20);
-                long endTime = drivers.get(i).getWorkEnd().toSecondOfDay() * 1000 + rng.nextInt(1000 * 60 * 20);
-                traffic.put(startTime, routesToWork.get(i));
-                traffic.put(endTime, routesFromWork.get(i));
-            }
-            long time = 0;
-            for (int i = 0; i < 288; i++) {
-                Map<Integer, Double> intensityDistance = new HashMap<>();
-                Map<Edge, Integer> intensity = traffic.getIntensity(time);
-                time += 300000L;
-                for (Map.Entry<Edge, Integer> entry :
-                        intensity.entrySet()) {
-                    intensityDistance.putIfAbsent(entry.getValue(), 0.0);
-                    intensityDistance.computeIfPresent(entry.getValue(), (key, sum) -> sum + entry.getKey().getDistance());
-                }
-            }
+
+    public void IntensityMapSaving() throws IOException {
+        IntensityMap traffic = new IntensityMap();
+        for (int i = 0; i < routesFromWork.size(); i++) {
+            long startTime = drivers.get(i).getWorkStart().toSecondOfDay() * 1000;
+            long endTime = drivers.get(i).getWorkEnd().toSecondOfDay() * 1000;
+            traffic.put(startTime, routesToWork.get(i));
+            traffic.put(endTime, routesFromWork.get(i));
         }
+
+        Path path = FileSystems.getDefault().getPath(IntensityMapSaveFile);
+        Files.deleteIfExists(path);
+        Files.createFile(path);
+        OutputStream out = Files.newOutputStream(path, StandardOpenOption.WRITE);
+        OutputStreamWriter writer = new OutputStreamWriter(out, Charset.defaultCharset());
+
+        Path path2 = FileSystems.getDefault().getPath(EdgesStorageSaveFile);
+        Files.deleteIfExists(path2);
+        Files.createFile(path2);
+        OutputStream out2 = Files.newOutputStream(path2, StandardOpenOption.WRITE);
+        OutputStreamWriter writer2 = new OutputStreamWriter(out2, Charset.defaultCharset());
+
+        Routing.saveEdgesStorage(writer2);
+        traffic.writeToCSV(writer);
+
     }
+
+    @Test
+    public void IntensityMapLoading() throws IOException {
+        IntensityMap loadedtraffic = new IntensityMap();
+
+        Routing.loadEdgesStorage(EdgesStrorageLoadFile);
+        loadedtraffic.loadFromCSV(IntenstityMapLoadFile);
+    }
+
 }

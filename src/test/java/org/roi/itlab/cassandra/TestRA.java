@@ -2,6 +2,7 @@ package org.roi.itlab.cassandra;
 
 import java.util.List;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.stat.Frequency;
 import org.junit.Assert;
 import org.junit.Before;
@@ -23,17 +24,15 @@ public class TestRA {
         age_freq = new Frequency();
         workstart_freq = new Frequency();
         workduration_freq = new Frequency();
+        MersenneTwister rng = new MersenneTwister(1);
 
-        RandomGeneratorDirector randomGeneratorDirector = new RandomGeneratorDirector();
-        RandomGeneratorBuilder  ageRandomGenerator = new AgeRandomGenerator();
-        randomGeneratorDirector.setRandomGeneratorBuilder(ageRandomGenerator);
+        RandomGenerator ageRandomGenerator = new AgeRandomGenerator(rng);
 
         long mean = 0;
         int tmp;
 
         for(int j = 0 ; j < count;++j) {
-            randomGeneratorDirector.constructRandomGenerator(j);
-            tmp = randomGeneratorDirector.getRandomGenerator().getRandomInt();
+            tmp = ageRandomGenerator.getRandomInt();
             mean += tmp;
            age_freq.addValue(tmp);
         }
@@ -42,14 +41,12 @@ public class TestRA {
         age_mode = age_freq.getMode();
 
 
-        RandomGeneratorBuilder  workStartRandomGenerator = new WorkStartRandomGenerator();
-        randomGeneratorDirector.setRandomGeneratorBuilder(workStartRandomGenerator);
+        RandomGenerator workStartRandomGenerator = new WorkStartRandomGenerator(rng);
 
         mean = 0;
 
         for(int j = 0 ; j < count;++j) {
-            randomGeneratorDirector.constructRandomGenerator(j);
-            tmp = randomGeneratorDirector.getRandomGenerator().getRandomInt();
+            tmp = workStartRandomGenerator.getRandomInt();
             mean += tmp;
             workstart_freq.addValue(tmp);
         }
@@ -59,14 +56,12 @@ public class TestRA {
 
 
 
-        RandomGeneratorBuilder  workDurationRandomGenerator = new WorkDurationRandomGenerator();
-        randomGeneratorDirector.setRandomGeneratorBuilder(workDurationRandomGenerator);
+        RandomGenerator workDurationRandomGenerator = new WorkDurationRandomGenerator(rng);
 
         mean = 0;
 
         for(int j = 0 ; j < count;++j) {
-            randomGeneratorDirector.constructRandomGenerator(j);
-            tmp = randomGeneratorDirector.getRandomGenerator().getRandomInt();
+            tmp = workDurationRandomGenerator.getRandomInt();
             mean += tmp;
             workduration_freq.addValue(tmp);
         }
@@ -80,10 +75,10 @@ public class TestRA {
     @Test
     public void TestBuilder() throws Exception {
         Assert.assertEquals(age_mean, 35, 15);
-        Assert.assertEquals(age_mode.get(0).toString(), "32");
+        Assert.assertEquals(Integer.parseInt(age_mode.get(0).toString()), 35, 5);
         Assert.assertEquals(workstart_mean, 9, 1);
-        Assert.assertEquals(workstart_mode.get(0).toString(), "9");
+        Assert.assertEquals(Integer.parseInt(workstart_mode.get(0).toString()), 9, 2);
         Assert.assertEquals(workduration_mean, 8, 2);
-        Assert.assertEquals(workduration_mode.get(0).toString(), "9");
+        Assert.assertEquals(Integer.parseInt(workduration_mode.get(0).toString()), 9, 2);
     }
 }
