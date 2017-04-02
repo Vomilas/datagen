@@ -24,7 +24,6 @@ public class TrafficCalcTestIT {
     private List<Long> startTimes;
 
     @Before
-
     public void init() {
         routes = new ArrayList<>(N);
         startTimes = new ArrayList<>(N);
@@ -38,11 +37,10 @@ public class TrafficCalcTestIT {
     }
 
     @Test
-
     public void TestTrafficIT() {
         IntensityMap intensityMap = new IntensityMap();
         intensityMap.put(startTimes, routes);
-        System.out.println("\n" + intensityMap);
+//        System.out.println("\n" + intensityMap);
         assertEquals(intensityMap.getIntensity(Routing.getEdge(12205),
                 1488186250000L),
                 3);

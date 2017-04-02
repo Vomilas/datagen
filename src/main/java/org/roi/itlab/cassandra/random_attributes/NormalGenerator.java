@@ -16,10 +16,11 @@ public class NormalGenerator {
     private PolynomialSplineFunction devPsf;
     private org.apache.commons.math3.random.RandomGenerator rng;
 
-    public NormalGenerator(){}
+    public NormalGenerator(org.apache.commons.math3.random.RandomGenerator rng){
+        this.rng = rng;
+    }
 
-    public NormalGenerator(org.apache.commons.math3.random.RandomGenerator rng, double[] x, double[] y, double z[])
-    {
+    public NormalGenerator(org.apache.commons.math3.random.RandomGenerator rng, double[] x, double[] y, double z[]) {
         this.rng = rng;
         LinearInterpolator li = new LinearInterpolator();
         setMeanPsf(li.interpolate(x,y));
@@ -37,29 +38,19 @@ public class NormalGenerator {
         this.min = min;
     }
 
-    public double getRandomDouble(double source) {
-
-//TODO: add min/max checks
-//            if(value <= x[0])
-//                return means[0];
-//            if(value >= x[x.length-1])
-//                return normalExperienceGenerator.getRandomDouble(x[x.length-1]);
-//            return normalExperienceGenerator.getRandomDouble(value);
+    public double getRandomDouble(double value) {
+        double source;
+        if(value < min)
+            source = min;
+        else if(value > max)
+            source = max;
+        else
+            source = value;
 
         double mean = meanPsf.value(source);
         double dev = devPsf.value(source);
         RealDistribution dist = new NormalDistribution(rng, mean, dev);
         return dist.sample();
-    }
-
-    public int getMaxValue(double[] array) {
-        double maxValue = array[0];
-        for (int i = 1; i < array.length; i++) {
-            if (array[i] > maxValue) {
-                maxValue = array[i];
-            }
-        }
-        return (int)maxValue+1;
     }
 
     public PolynomialSplineFunction getMeanPsf() {
@@ -77,5 +68,4 @@ public class NormalGenerator {
     public void setDevPsf(PolynomialSplineFunction devPsf) {
         this.devPsf = devPsf;
     }
-
 }

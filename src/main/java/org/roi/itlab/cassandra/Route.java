@@ -17,6 +17,14 @@ public class Route {
         return size;
     }
 
+    public double getDistance() {
+        double distance = 0;
+        for (Edge edge : edges) {
+            distance += edge.getDistance();
+        }
+        return distance;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

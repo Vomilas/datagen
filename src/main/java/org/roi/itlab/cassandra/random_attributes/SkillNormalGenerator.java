@@ -5,9 +5,9 @@ package org.roi.itlab.cassandra.random_attributes;
  */
 public class SkillNormalGenerator extends NormalGenerator {
 
-    static double[] x = {0.0,5.0,10.0,20.0,90};
-    static double[] y  = {0.5,0.9,1.2,1.3,1.0};
-    static double[] z  = {0.1,0.2,0.3,0.3,0.2};
+    static double[] x = {0.0,5,10,20,40,60};
+    static double[] y  = {0.5,1.0,1.4,1.5,1.2,1.1};
+    static double[] z  = {0.1,0.15,0.2,0.2,0.1,0.1};
 
     public SkillNormalGenerator(org.apache.commons.math3.random.RandomGenerator rng) {
         super(rng, x, y, z);

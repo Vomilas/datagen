@@ -20,11 +20,9 @@ public class RoutingTestIT {
     private static final int ROUTSCOUNT = 1000;
     private List<Poi> pois, starts, ends;
     private Random rng;
-    private static final String target = "./target/edges_storage";
+    private static final String target = "./target/edges_test";
 
     @Before
-
-
     public void init() throws IOException {
 
         pois = PoiLoader.loadFromCsv(testPois);
