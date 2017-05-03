@@ -27,6 +27,7 @@ public class Person {
     private double skill;
     private double rushFactor;
 
+    private double probability;
     private int accidents;
     private int previousAccidents;
 
@@ -177,5 +178,13 @@ public class Person {
 
     public void setPreviousAccidents(int previousAccidents) {
         this.previousAccidents = previousAccidents;
+    }
+
+    public double getProbability() {
+        return probability;
+    }
+
+    public void setProbability(double probability) {
+        this.probability = probability;
     }
 }

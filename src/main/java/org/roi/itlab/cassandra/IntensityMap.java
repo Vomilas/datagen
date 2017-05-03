@@ -6,23 +6,17 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.geojson.*;
 import org.roi.itlab.cassandra.person.Person;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 class IntensityMap {
 
-    private class Timetable {
+    private static class Timetable implements Serializable {
         static final int SIZE = 288;
         private int[] timetable;
 
@@ -59,10 +53,12 @@ class IntensityMap {
         }
     }
 
-    private Map<Edge, Timetable> map;
+    private Map<Edge, Timetable> mapForward;
+    private Map<Edge, Timetable> mapBackward;
 
     public IntensityMap() {
-        map = new HashMap<>();
+        mapForward = new HashMap<>();
+        mapBackward = new HashMap<>();
     }
 
     public IntensityMap(List<Person> drivers) {
@@ -76,15 +72,23 @@ class IntensityMap {
     }
 
     public int getSize() {
-        return map.size();
+        return mapForward.size() + mapBackward.size();
     }
 
     public void put(long starttime, Route route) {
         long time = starttime;
-        for (Edge e :
-                route.getEdges()) {
-            map.putIfAbsent(e, new Timetable());
-            map.get(e).intensify(time);
+        Edge[] edges = route.getEdges();
+        boolean[] directions = route.getDirections();
+        for (int i = 0; i < edges.length; i++) {
+            Edge e = edges[i];
+            boolean direction = directions[i];
+            if (direction) {
+                mapForward.putIfAbsent(e, new Timetable());
+                mapForward.get(e).intensify(time);
+            } else {
+                mapBackward.putIfAbsent(e, new Timetable());
+                mapBackward.get(e).intensify(time);
+            }
             time += e.getTime();
         }
     }
@@ -103,14 +107,17 @@ class IntensityMap {
 
     public int getMaxIntensity() {
         int result = 0;
-        for (Timetable timetable : map.values()) {
+        for (Timetable timetable : mapForward.values()) {
+            result = Math.max(result, timetable.getMaxIntensity());
+        }
+        for (Timetable timetable : mapBackward.values()) {
             result = Math.max(result, timetable.getMaxIntensity());
         }
         return result;
     }
 
     //translates the miliseconds from 1970-01-01 @ 00:00:00 to minutes from the beginning of the current day
-    private int getMinutes(long time) {
+    private static int getMinutes(long time) {
         return (int) (time / 1000 / 60 % (60 * 24));
     }
 
@@ -119,7 +126,7 @@ class IntensityMap {
         StringBuilder builder = new StringBuilder();
         int hour;
         int minute;
-        for (Map.Entry<Edge, Timetable> entry : map.entrySet()) {
+        for (Map.Entry<Edge, Timetable> entry : mapForward.entrySet()) {
             builder.append(entry.getKey().toString() + ":\n");
             for (int i = 0; i < Timetable.SIZE; ++i) {
                 if (entry.getValue().getIntensityByNumber(i) != 0) {
@@ -134,27 +141,65 @@ class IntensityMap {
     }
 
     //traffic intensity on one edge
-    int getIntensity(Edge edge, long time) {
-        if (map.containsKey(edge)) {
-            return map.get(edge).getIntensity(time);
+    int getIntensity(Edge edge, long time, boolean direction) {
+        if (direction) {
+            if (mapForward.containsKey(edge)) {
+                return mapForward.get(edge).getIntensity(time);
+            }
+        } else {
+            if (mapBackward.containsKey(edge)) {
+                return mapBackward.get(edge).getIntensity(time);
+            }
         }
         return 0;
     }
 
-    //traffic intensity on road network
-    Map<Edge, Integer> getIntensity(long time) {
-        Map<Edge, Integer> temp = new HashMap<>();
-        for (Edge edge :
-                map.keySet()) {
-            temp.put(edge, getIntensity(edge, time));
+
+    private static class forSerialize implements Serializable {
+        private int edgeId;
+        private Timetable forward;
+        private Timetable backward;
+
+        public forSerialize(int edgeId, Timetable forward, Timetable backward) {
+            this.edgeId = edgeId;
+            this.forward = forward;
+            this.backward = backward;
         }
-        return temp;
+    }
+
+    public void save(String filename) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(filename, false);
+             ObjectOutputStream oos = new ObjectOutputStream(fos);) {
+            Set<Edge> edges = new HashSet<>();
+            edges.addAll(mapForward.keySet());
+            edges.addAll(mapBackward.keySet());
+            Timetable empty = new Timetable();
+            for (Edge edge :
+                    edges) {
+                forSerialize temp = new forSerialize(edge.id, mapForward.getOrDefault(edge, empty), mapBackward.getOrDefault(edge, empty));
+                oos.writeObject(temp);
+            }
+        }
+    }
+
+    public void load(String filename) throws IOException, ClassNotFoundException {
+        try (FileInputStream fis = new FileInputStream(filename);
+             ObjectInputStream ois = new ObjectInputStream(fis);) {
+            int count = 0;
+            while (fis.available() > 0) {
+                count++;
+                forSerialize temp = (forSerialize) ois.readObject();
+                mapForward.put(Routing.getEdge(temp.edgeId), temp.forward);
+                mapBackward.put(Routing.getEdge(temp.edgeId), temp.backward);
+            }
+        }
+        System.out.printf("Loaded IntensityMap, %d edges, max intensity = %d\n", getSize(), getMaxIntensity());
     }
 
     //edgeID|intensity at 00:00|intensity at 00:05|...|intensity at 23:55
     public void writeToCSV(OutputStreamWriter writer) throws IOException {
         for (Map.Entry<Edge, Timetable> entry :
-                map.entrySet()) {
+                mapForward.entrySet()) {
             writer.write(Integer.toString(entry.getKey().id));
             writer.write('|');
             writer.write(entry.getValue().toCSV());
@@ -170,7 +215,7 @@ class IntensityMap {
             for (int i = 1; i < p.length; i++) {
                 timetable[i - 1] = Integer.parseInt(p[i]);
             }
-            map.put(Routing.getEdge(Integer.parseInt(p[0])), new Timetable(timetable));
+            mapForward.put(Routing.getEdge(Integer.parseInt(p[0])), new Timetable(timetable));
         };
         Files.lines(Paths.get(filename)).forEach(putEdge);
         System.out.printf("Loaded IntensityMap, %d edges, max intensity = %d\n", getSize(), getMaxIntensity());
@@ -187,7 +232,7 @@ class IntensityMap {
         }
 
         int maxSum = getMaxIntensity();
-        for (Map.Entry<Edge, Timetable> entry : map.entrySet()) {
+        for (Map.Entry<Edge, Timetable> entry : mapForward.entrySet()) {
 
             Edge edge = entry.getKey();
             int load = entry.getValue().getIntensity(time);

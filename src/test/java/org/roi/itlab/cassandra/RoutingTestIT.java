@@ -74,4 +74,15 @@ public class RoutingTestIT {
         int newsize = Routing.getEdgesStorage().size();
         Assert.assertEquals(size,newsize);
     }
+
+    @Test
+    public void directionsOnTwoWayRoads(){
+        Route route1 = Routing.route(59.939356,30.265628, 59.937819,30.260237);
+        Route route2 = Routing.route(59.937819,30.260237, 59.939356,30.265628);
+        boolean[] directions = route1.getDirections();
+        boolean[] directions2 = route2.getDirections();
+        for (int i = 0; i < directions.length; i++) {
+            Assert.assertFalse(directions[i]==directions2[i]);
+        }
+         }
 }

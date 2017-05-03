@@ -19,15 +19,19 @@ import static org.junit.Assert.assertNotEquals;
 public class CityIT {
 
     private static final String DRIVERS_FILENAME_PREFIX = "./target/drivers";
+    private static final String ROUTES_FILENAME_PREFIX = "./target/routes";
 
-    private static final int DRIVERS_COUNT = 5_000;
+    private static final int[] DRIVERS_COUNT = new int[]{5_000, 50_000, 250_000};
     private RandomGenerator rng = new MersenneTwister(2);
 
     @Test
     @Ignore
-    public void citySimulationTest() throws IOException {
-        City city = new City(DRIVERS_COUNT, rng);
+    public void citySimulationTest() throws IOException, ClassNotFoundException {
+        City city = new City(DRIVERS_COUNT[DRIVERS_COUNT.length - 1], rng);
         city.simulate();
-        city.save(DRIVERS_FILENAME_PREFIX + "_" + DRIVERS_COUNT + ".csv");
+        for (int drivers : DRIVERS_COUNT) {
+            city.save(DRIVERS_FILENAME_PREFIX + "_" + drivers + ".csv", drivers);
+            city.saveRoutes(ROUTES_FILENAME_PREFIX + "_" + drivers + ".csv", drivers);
+        }
     }
 }

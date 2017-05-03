@@ -19,6 +19,7 @@ import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Routing {
 
@@ -53,44 +54,49 @@ public class Routing {
         return route(from.getLatitude(), from.getLongitude(), to.getLatitude(), to.getLongitude());
     }
 
+    private static Edge extractEdge(EdgeIteratorState e) {
+
+        NodeAccess nodes = hopper.getGraphHopperStorage().getBaseGraph().getNodeAccess();
+        //getting Edge details
+        int id = e.getEdge();
+        int baseNodeId = e.getBaseNode();
+        int adjNodeId = e.getAdjNode();
+        double x1 = nodes.getLongitude(adjNodeId);
+        double x2 = nodes.getLongitude(baseNodeId);
+        double x3 = nodes.getLat(adjNodeId);
+        double x4 = nodes.getLat(baseNodeId);
+        double distance = e.getDistance();
+        FlagEncoder encoder = hopper.getEncodingManager().getEncoder("car");
+        long flags = e.getFlags();
+        double speed = encoder.getSpeed(flags);
+        boolean oneWay = encoder.isBackward(flags) ^ encoder.isForward(flags);
+        PointList geometry = e.fetchWayGeometry(3);
+        int time = (int) (distance * 3600 / (speed));
+        return new Edge(id, new Point(x4, x2), new Point(x3, x1), geometry, distance, time, speed, oneWay, baseNodeId);
+
+    }
+
+
     public static Route route(double fromLat, double fromLon, double toLat, double toLon) {
         Path path = calcPath(fromLat, fromLon, toLat, toLon);
-        NodeAccess nodes = hopper.getGraphHopperStorage().getBaseGraph().getNodeAccess();
         List<Edge> edges = new ArrayList<>();
-        for (EdgeIteratorState edgeIteratorState :
-                path.calcEdges()) {
-            if (!(edgeIteratorState instanceof VirtualEdgeIteratorState)) {
-                int id = edgeIteratorState.getEdge();
-                if (EDGES_STORAGE.containsKey(id)) {
-                    edges.add(EDGES_STORAGE.get(id));
-                } else {
-                    //getting Edge details
-                    int baseNodeId = edgeIteratorState.getBaseNode();
-                    int adjNodeId = edgeIteratorState.getAdjNode();
-                    double x1 = nodes.getLongitude(adjNodeId);
-                    double x2 = nodes.getLongitude(baseNodeId);
-                    double x3 = nodes.getLat(adjNodeId);
-                    double x4 = nodes.getLat(baseNodeId);
-                    double distance = edgeIteratorState.getDistance();
-                    FlagEncoder encoder = hopper.getEncodingManager().getEncoder("car");
-                    long flags = edgeIteratorState.getFlags();
-                    double speed = encoder.getSpeed(flags);
-                    boolean backward = encoder.isBackward(flags);
-                    PointList geometry = edgeIteratorState.fetchWayGeometry(3);
-                    int time = (int) (distance * 3600 / (speed));
-                    Edge tempedge = new Edge(id, new Point(x4, x2), new Point(x3, x1), geometry, distance, time, speed, backward);
-                    EDGES_STORAGE.put(id, tempedge);
-                    edges.add(tempedge);
-                }
-            }
+        List<EdgeIteratorState> edgeIteratorStates = path.calcEdges().
+                stream().
+                filter(x -> !(x instanceof VirtualEdgeIteratorState)).
+                collect(Collectors.toList());
+        boolean[] directions = new boolean[edgeIteratorStates.size()];
+        for (int i = 0; i < edgeIteratorStates.size(); i++) {
+            EdgeIteratorState edgeIteratorState = edgeIteratorStates.get(i);
+            int id = edgeIteratorState.getEdge();
+            EDGES_STORAGE.putIfAbsent(id, extractEdge(edgeIteratorState));
+            edges.add(EDGES_STORAGE.get(id));
+            directions[i] = edgeIteratorState.getBaseNode() == EDGES_STORAGE.get(id).getBaseNodeId();
         }
-        return new Route(edges.toArray(new Edge[0]));
 
+
+        return new Route(edges.toArray(new Edge[0]), directions);
     }
 
-    public static Path calcPath(Poi from, Poi to) {
-        return calcPath(from.getLoc().getLatitude(), from.getLoc().getLongitude(), to.getLoc().getLatitude(), to.getLoc().getLongitude());
-    }
 
     public static Path calcPath(double fromLat, double fromLon, double toLat, double toLon) {
         GHRequest req = new GHRequest(fromLat, fromLon, toLat, toLon).

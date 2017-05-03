@@ -40,7 +40,7 @@ public class PersonGeneratorIT {
     public void TestBuilder() throws Exception {
         Assert.assertEquals(mean_mean, 30, 15);
         Assert.assertEquals(age.getUniqueCount(), 72, 2);
-        Assert.assertEquals(Integer.parseInt(mode.get(0).toString()), 30, 5);
+        Assert.assertEquals(Integer.parseInt(mode.get(0).toString()), 35, 5);
         Assert.assertEquals(workStartTime.getUniqueCount(), 13);
     }
 }

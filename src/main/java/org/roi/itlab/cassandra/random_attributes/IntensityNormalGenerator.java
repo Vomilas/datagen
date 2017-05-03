@@ -8,7 +8,7 @@ public class IntensityNormalGenerator extends NormalGenerator {
     private final int maxIntensity;
     private final static double[] x = new double[]{0, 1, 2, 5, 10};
     private final static double[] y = new double[]{1, 1, 1.1, 2.0, 5};
-    private final static double[] z = new double[]{0.01, 0.1, 0.1, 0.2, 0.2};
+    private final static double[] z = new double[]{0.01, 0.01, 0.01, 0.02, 0.05};
 
     public IntensityNormalGenerator(int maxIntensity, org.apache.commons.math3.random.RandomGenerator rng) {
         super(rng, x, y, z);
